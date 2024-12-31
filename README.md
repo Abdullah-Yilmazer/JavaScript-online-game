@@ -48,7 +48,7 @@ This project is a real-time, multiplayer counter game built using Socket.IO. Pla
     node server.js
     ```
 
-5.  Open the client files in a web browser (e.g., `index.html`).
+5.  Open the client files in a web browser (e.g., `index.html`). (!! To add multiple users from the same device, you must log in from different browsers.)
 
 ### How to Play
 
@@ -118,7 +118,7 @@ Bu proje, Socket.IO kullanılarak oluşturulmuş gerçek zamanlı, çok oyunculu
     node server.js
     ```
 
-5.  İstemci dosyalarını bir web tarayıcısında açın (örneğin, `index.html`).
+5.  İstemci dosyalarını bir web tarayıcısında açın (örneğin, `index.html`). (!! Aynı cihazadan birden çok kullanıcı eklemek için farklı tarayıcılardan giriş yapmanız gerekmektedir.)
 
 ### Nasıl Oynanır
 
