@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Oyun</title>
+    <style>
+      .disabled {
+        opacity: 0.5;
+        cursor: default;
+        pointer-events: none;
+      }
+      #userListContainer {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        border: 1px solid black;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Online Oyun</h1>
+    <div id="usernameInput">
+      Kullanıcı Adı: <input type="text" id="usernameField" />
+      <button id="setUsernameButton">Kaydet</button>
+    </div>
+    <div id="gameContent" style="display: none">
+      <div id="userListContainer">
+        <h2>Online Oyuncular</h2>
+        <ul id="userList"></ul>
+      </div>
+
+      <div id="gameArea" style="display: none">
+        <h2>Oyun Alanı</h2>
+        <p id="gameDetails"></p>
+        <p>Sayaç: <span id="counter">0</span></p>
+        <button id="incrementButton">Artır</button>
+        <button id="decrementButton">Azalt</button>
+        <button id="exitGame">Oyundan Çık</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.6.0/socket.io.js"></script>
+    <script>
+      const socket = io("http://localhost:3000");
+      const usernameInput = document.getElementById("usernameInput");
+      const usernameField = document.getElementById("usernameField");
+      const setUsernameButton = document.getElementById("setUsernameButton");
+      const gameContent = document.getElementById("gameContent");
+      const userList = document.getElementById("userList");
+      const gameArea = document.getElementById("gameArea");
+      const counterDisplay = document.getElementById("counter");
+      const incrementButton = document.getElementById("incrementButton");
+      const decrementButton = document.getElementById("decrementButton");
+      const gameDetails = document.getElementById("gameDetails");
+      const exitGameButton = document.getElementById("exitGame");
+      let myStatus = "online";
+      let currentRoomId;
+      let isGameActive = false;
+      let gameData; //gameData değişkeni eklendi
+
+      setUsernameButton.addEventListener("click", () => {
+        const username = usernameField.value.trim();
+        if (username !== "") {
+          socket.emit("setUsername", username);
+        } else {
+          alert("Lütfen bir kullanıcı adı girin.");
+        }
+      });
+      socket.on("usernameError", (message) => {
+        alert(message);
+      });
+      socket.on("usernameSet", (username) => {
+        usernameInput.style.display = "none";
+        gameContent.style.display = "block";
+        console.log("Kullanıcı adı ayarlandı:", username);
+        //Oyun kodları buraya
+        socket.on("connect", () => {
+          console.log("Bağlantı Başarılı");
+        });
+
+        socket.on("updateUsers", (users) => {
+          userList.innerHTML = "";
+          myStatus = users[socket.id]?.status || "online";
+          for (const id in users) {
+            const li = document.createElement("li");
+            li.textContent = users[id].username + (users[id].status === "oyunda" ? " (Oyunda)" : "");
+            const inviteButton = document.createElement("button");
+            inviteButton.textContent = "Davet Et";
+            inviteButton.dataset.targetId = id;
+            inviteButton.addEventListener("click", () => {
+              if (!isGameActive) {
+                socket.emit("invite", inviteButton.dataset.targetId);
+              }
+            });
+            if (id === socket.id || users[id].status === "oyunda" || myStatus === "oyunda" || isGameActive) {
+              inviteButton.classList.add("disabled");
+            }
+            li.appendChild(inviteButton);
+            userList.appendChild(li);
+          }
+        });
+
+        socket.on("inviteReceived", (data) => {
+          const confirmInvite = confirm(`${data.inviterName} sizi oyuna davet ediyor. Kabul ediyor musunuz?`);
+          if (confirmInvite) {
+            socket.emit("acceptInvite", data);
+          }
+        });
+
+        socket.on("inviteAccepted", (roomId, data) => {
+          currentRoomId = roomId;
+          console.log("inviteAccepted olayı alındı. Oda ID:", currentRoomId);
+          gameData = data;
+          gameData = { counter: 0, details: "Oyun Başladı!" };
+          counterDisplay.textContent = gameData.counter;
+          gameDetails.textContent = gameData.details;
+          incrementButton.disabled = false;
+          decrementButton.disabled = false;
+          gameArea.style.display = "block";
+          isGameActive = true;
+        });
+
+        socket.on("gameStarted", (roomId, data) => {
+          currentRoomId = roomId;
+          console.log("gameStarted olayı alındı. Oda ID:", currentRoomId);
+          gameData = data;
+          gameData = { counter: 0, details: "Oyun Başladı!" };
+          counterDisplay.textContent = gameData.counter;
+          gameDetails.textContent = gameData.details;
+          incrementButton.disabled = false;
+          decrementButton.disabled = false;
+          gameArea.style.display = "block";
+          isGameActive = true;
+          updateButtonStates(data.currentTurn === socket.id); // Buton durumlarını güncelle
+        });
+
+        incrementButton.addEventListener("click", () => {
+          // console.log("Artır butonuna tıklandı. currentRoomId:", currentRoomId);
+          if (currentRoomId) {
+            socket.emit("incrementCounter", currentRoomId);
+          } else {
+            console.log("currentRoomId tanımlı değil");
+          }
+        });
+
+        decrementButton.addEventListener("click", () => {
+          //  console.log("Azalt butonuna tıklandı. currentRoomId:", currentRoomId);
+          if (currentRoomId) {
+            socket.emit("decrementCounter", currentRoomId);
+          } else {
+            console.log("currentRoomId tanımlı değil");
+          }
+        });
+
+        socket.on("updateGame", (data) => {
+          // console.log("updateGame olayı alındı:", data); // updateGame logu
+          gameData = data;
+          counterDisplay.textContent = gameData.counter;
+          gameDetails.textContent = gameData.details;
+          updateButtonStates(data.currentTurn === socket.id); // Buton durumlarını güncelle
+        });
+
+        socket.on("notYourTurn", (message) => {
+          alert(message);
+        });
+
+        function updateButtonStates(isMyTurn) {
+          incrementButton.disabled = !isMyTurn;
+          decrementButton.disabled = !isMyTurn;
+        }
+
+        socket.on("disconnect", () => {
+          console.log("Bağlantı koptu.");
+          if (currentRoomId) {
+            socket.emit("leaveGame", currentRoomId);
+          }
+          gameArea.style.display = "none";
+          incrementButton.disabled = true;
+          decrementButton.disabled = true;
+          currentRoomId = null;
+          isGameActive = false;
+        });
+
+        socket.on("opponentLeft", () => {
+          alert("Rakip Oyundan Ayrıldı");
+          gameArea.style.display = "none";
+          incrementButton.disabled = true;
+          decrementButton.disabled = true;
+          currentRoomId = null;
+          isGameActive = false;
+        });
+
+        socket.on("opponentDisconnected", () => {
+          alert("Rakip bağlantısı kesildi!");
+          gameArea.style.display = "none";
+          incrementButton.disabled = true;
+          decrementButton.disabled = true;
+          currentRoomId = null;
+          isGameActive = false;
+        });
+
+        exitGameButton.addEventListener("click", () => {
+          if (currentRoomId) {
+            socket.emit("leaveGame", currentRoomId);
+          }
+          gameArea.style.display = "none";
+          incrementButton.disabled = true;
+          decrementButton.disabled = true;
+          currentRoomId = null;
+          isGameActive = false;
+        });
+      });
+    </script>
+  </body>
+</html>
