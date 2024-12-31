@@ -27,7 +27,7 @@ This project is a real-time, multiplayer counter game built using Socket.IO. Pla
 1.  Clone this repository:
 
     ```bash
-    git clone [https://github.com/Abdullah-Yilmazer/JavaScript-online-game.git](https://github.com/Abdullah-Yilmazer/JavaScript-online-game.git)
+    git clone https://github.com/Abdullah-Yilmazer/JavaScript-online-game.git
     ```
 
 2.  Navigate to the server directory:
@@ -97,7 +97,7 @@ Bu proje, Socket.IO kullanılarak oluşturulmuş gerçek zamanlı, çok oyunculu
 1.  Bu depoyu klonlayın:
 
     ```bash
-    git clone [https://github.com/Abdullah-Yilmazer/JavaScript-online-game.git](https://github.com/Abdullah-Yilmazer/JavaScript-online-game.git)
+    git clone https://github.com/Abdullah-Yilmazer/JavaScript-online-game.git
     ```
 
 2.  Sunucu dizinine gidin:
